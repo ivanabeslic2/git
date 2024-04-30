@@ -140,6 +140,14 @@ test_expect_success 'extra character after attribute' '
 	invalid_color "dimX"
 '
 
+test_expect_success 'wrong number of letters in RGB color' '
+	invalid_color "#1" &&
+	invalid_color "#23" &&
+	invalid_color "#4567" &&
+	invalid_color "#89abc" &&
+	invalid_color "#def0123"
+'
+
 test_expect_success 'non-hex character in RGB color' '
 	invalid_color "#x23456" &&
 	invalid_color "#1x3456" &&
