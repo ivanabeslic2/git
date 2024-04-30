@@ -1,8 +1,3 @@
-/*
- * not really _using_ the compat macros, just make sure the_index
- * declaration matches the definition in this file.
- */
-#define USE_THE_INDEX_VARIABLE
 #include "git-compat-util.h"
 #include "abspath.h"
 #include "repository.h"
@@ -22,19 +17,15 @@
 
 /* The main repository */
 static struct repository the_repo;
-struct repository *the_repository;
-struct index_state the_index;
+struct repository *the_repository = &the_repo;
 
-void initialize_the_repository(void)
+void initialize_repository(struct repository *repo)
 {
-	the_repository = &the_repo;
-
-	the_repo.index = &the_index;
-	the_repo.objects = raw_object_store_new();
-	the_repo.remote_state = remote_state_new();
-	the_repo.parsed_objects = parsed_object_pool_new();
-
-	index_state_init(&the_index, the_repository);
+	repo->objects = raw_object_store_new();
+	repo->remote_state = remote_state_new();
+	repo->parsed_objects = parsed_object_pool_new();
+	ALLOC_ARRAY(repo->index, 1);
+	index_state_init(repo->index, repo);
 }
 
 static void expand_base_dir(char **out, const char *in,
@@ -186,9 +177,7 @@ int repo_init(struct repository *repo,
 	struct repository_format format = REPOSITORY_FORMAT_INIT;
 	memset(repo, 0, sizeof(*repo));
 
-	repo->objects = raw_object_store_new();
-	repo->parsed_objects = parsed_object_pool_new();
-	repo->remote_state = remote_state_new();
+	initialize_repository(repo);
 
 	if (repo_init_gitdir(repo, gitdir))
 		goto error;
@@ -305,8 +294,7 @@ void repo_clear(struct repository *repo)
 
 	if (repo->index) {
 		discard_index(repo->index);
-		if (repo->index != &the_index)
-			FREE_AND_NULL(repo->index);
+		FREE_AND_NULL(repo->index);
 	}
 
 	if (repo->promisor_remote_config) {
